@@ -1,6 +1,8 @@
 #![allow(unused)]
 
+use std::ops::IndexMut;
 use crate::html;
+use std::rc::Rc;
 
 pub struct Engine {
     document: html::Document,
@@ -26,12 +28,27 @@ impl Engine {
     }
 
     /// Calculates layout properties of a generic element.
-    fn process_element(&self, element: &html::Element) -> Vec<Element> {
+    fn process_element(&self, element: &html::Element) -> LayoutResult {
         if element.children.len() == 0 {
             return vec![self.process_lonely_element(element)];
         }
 
-        let mut result = Vec::<Element>::new();
+        return self.process_crowded_element(element);
+    }
+
+    /// Calculates layout properties of an element with no children.
+    fn process_lonely_element(&self, element: &html::Element) -> Element {
+        let mut elem = Element::default(element.index);
+
+        self.clamp_element_size(&element, &mut elem);
+        self.adjust_element_position(&element, &mut elem);
+        
+        return elem;
+    }
+
+    /// Calculates layout properties of an element that has some children.
+    fn process_crowded_element(&self, element: &html::Element) -> LayoutResult {
+        let mut result = LayoutResult::new();
         let mut elem = Element::default(element.index);
 
         let target_position = result.len();
@@ -44,51 +61,32 @@ impl Engine {
         }
 
         // Calculate positions of element's children.
-        for x in 1..element.children.len() {
-            let previous_element = &result[x - 1];
+        for idx in 1..element.children.len() {
+            let previous_element = &result[idx - 1];
             let y = previous_element.y + previous_element.height;
-            result[x].y += y;
+            result[idx].y += y;
         }
 
         // Calculate width and height of the element itself.
         let mut width: f64 = 0.0;
         let mut height: f64 = 0.0;
 
-        for x in 0..element.children.len() {
-            let element = &result[x];
-            width = width.max(result[x].width);
-            height = height.max(result[x].y + result[x].height);
+        for idx in 0..element.children.len() {
+            let child = &result[idx];
+            width = width.max(child.x + child.width);
+            height = height.max(child.y + child.height);
         }
 
         elem.width = width;
         elem.height = height;
 
         self.clamp_element_size(&element, &mut elem);
+        self.adjust_element_position(&element, &mut elem);
+        self.adjust_children_position(&elem, &mut result);
 
         result.insert(target_position, elem);
 
         return result;
-    }
-
-    /// Calculates layout properties of an element with no children
-    /// and returns it.
-    fn process_lonely_element(&self, element: &html::Element) -> Element {
-        let mut width = 0.0;
-        let mut height = 0.0;
-
-        if let Some(width_prop) = element.get_style_property("width") {
-            width = width_prop.parse().unwrap();
-        }
-
-        if let Some(height_prop) = element.get_style_property("height") {
-            height = height_prop.parse().unwrap();
-        }
-        
-        return Element {
-            width: width,
-            height: height,
-            ..Element::default(element.index)
-        }
     }
 
     /// Clamps given layout element's width and height to be within the range
@@ -127,6 +125,28 @@ impl Engine {
 
         element.width = clamp(element.width, min_width, max_width);
         element.height = clamp(element.height, min_height, max_height);
+    }
+
+    /// Moves the element accordingly to its `top` or `left` style properties.
+    fn adjust_element_position(&self, html_element: &html::Element, element: &mut Element) {
+        if let Some(left_prop) = html_element.get_style_property("left") {
+            let left: f64 = left_prop.parse().unwrap();
+            element.x += left;
+        }
+
+        if let Some(top_prop) = html_element.get_style_property("top") {
+            let top: f64 = top_prop.parse().unwrap();
+            element.y += top;
+        }
+    }
+
+    /// Adjusts element's children position to account for their parent's position.
+    fn adjust_children_position(&self, parent: &Element, children: &mut LayoutResult) {
+        for idx in 0..children.len() {
+            let mut child = children.index_mut(idx);
+            child.x += parent.x;
+            child.y += parent.y;
+        }
     }
 
     pub fn new(document: html::Document) -> Engine {
