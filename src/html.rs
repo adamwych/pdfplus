@@ -26,6 +26,9 @@ pub struct Element {
     /// Tag name.
     pub tag: String,
 
+    // Special case for text nodes. Contains the text.
+    pub text: String,
+
     /// Index of this element's parent element.
     pub parent: usize,
 
@@ -67,10 +70,21 @@ impl Document {
         let element = Element {
             index: idx,
             tag: String::from(tag),
-            parent: 0,
-            children: Vec::new(),
-            attributes: HashMap::new(),
-            style_properties: HashMap::new()
+            ..Element::default()
+        };
+
+        self.elements.push(element);
+        return idx;
+    }
+
+    /// Creates a new text Element and returns its index.
+    pub fn create_text_element(&mut self, text: &str) -> usize {
+        let idx = self.elements.len();
+        let element = Element {
+            index: idx,
+            tag: String::from("#text"),
+            text: String::from(text),
+            ..Element::default()
         };
 
         self.elements.push(element);
@@ -163,5 +177,22 @@ impl Element {
     /// added to the node.
     pub fn has_style_property(&self, name: &str) -> bool {
         return self.style_properties.contains_key(name);
+    }
+
+    /// Returns whether this is a text node.
+    pub fn is_text_node(&self) -> bool {
+        return self.tag == "#text";
+    }
+
+    pub fn default() -> Element {
+        Element {
+            index: 0,
+            tag: String::default(),
+            text: String::default(),
+            parent: 0,
+            children: Vec::new(),
+            attributes: HashMap::new(),
+            style_properties: HashMap::new()
+        }
     }
 }
