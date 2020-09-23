@@ -13,8 +13,7 @@ pub struct Element {
     pub width: f64,
     pub height: f64,
     pub x: f64,
-    pub y: f64,
-    pub color: i32,
+    pub y: f64
 }
 
 pub type LayoutResult = Vec<Element>;
@@ -33,10 +32,7 @@ impl Engine {
         }
 
         let mut result = Vec::<Element>::new();
-        let mut elem = Element {
-            color: 1,
-            ..Element::default(element.index)
-        };
+        let mut elem = Element::default(element.index);
 
         let target_position = result.len();
 
@@ -48,7 +44,7 @@ impl Engine {
         }
 
         // Calculate positions of element's children.
-        for x in 1..result.len() {
+        for x in 1..element.children.len() {
             let previous_element = &result[x - 1];
             let y = previous_element.y + previous_element.height;
             result[x].y += y;
@@ -58,10 +54,10 @@ impl Engine {
         let mut width: f64 = 0.0;
         let mut height: f64 = 0.0;
 
-        for x in 0..result.len() {
+        for x in 0..element.children.len() {
             let element = &result[x];
             width = width.max(result[x].width);
-            height += element.height;
+            height = height.max(result[x].y + result[x].height);
         }
 
         elem.width = width;
@@ -80,18 +76,17 @@ impl Engine {
         let mut width = 0.0;
         let mut height = 0.0;
 
-        if element.has_style_property("width") {
-            width = element.get_style_property("width").unwrap().parse().unwrap();
+        if let Some(width_prop) = element.get_style_property("width") {
+            width = width_prop.parse().unwrap();
         }
 
-        if element.has_style_property("height") {
-            height = element.get_style_property("height").unwrap().parse().unwrap();
+        if let Some(height_prop) = element.get_style_property("height") {
+            height = height_prop.parse().unwrap();
         }
-
+        
         return Element {
             width: width,
             height: height,
-            color: 0,
             ..Element::default(element.index)
         }
     }
@@ -122,6 +117,14 @@ impl Engine {
             max_height = max_height_prop.parse().unwrap();
         }
 
+        if let Some(width_prop) = html_element.get_style_property("width") {
+            min_width = width_prop.parse().unwrap();
+        }
+
+        if let Some(height_prop) = html_element.get_style_property("height") {
+            min_height = height_prop.parse().unwrap();
+        }
+
         element.width = clamp(element.width, min_width, max_width);
         element.height = clamp(element.height, min_height, max_height);
     }
@@ -140,8 +143,7 @@ impl Element {
             width: 0.0,
             height: 0.0,
             x: 0.0,
-            y: 0.0,
-            color: 0
+            y: 0.0
         }
     }
 }
