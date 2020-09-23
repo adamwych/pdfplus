@@ -93,36 +93,23 @@ impl Engine {
     /// specified by HTML element's [min-width, max-width] and [min-height, max-height]
     /// style properties.
     fn clamp_element_size(&self, html_element: &html::Element, element: &mut Element) {
-        let mut min_width = 0.0;
-        let mut max_width = std::f64::INFINITY;
-
-        let mut min_height = 0.0;
-        let mut max_height = std::f64::INFINITY;
-
-        if let Some(min_width_prop) = html_element.get_style_property("min-width") {
-            min_width = min_width_prop.parse().unwrap();
+        fn get_and_parse_or(html_element: &html::Element, name: &str, default: f64) -> f64 {
+            if let Some(prop_value) = html_element.get_style_property(name) {
+                return prop_value.parse().unwrap();
+            }
+            
+            return default;
         }
 
-        if let Some(max_width_prop) = html_element.get_style_property("max-width") {
-            max_width = max_width_prop.parse().unwrap();
-        }
+        // width and height effectively work like min-width and min-height in this context,
+        // so first try them, and if they are not set, then try min-width and min-height.
 
-        if let Some(min_height_prop) = html_element.get_style_property("min-height") {
-            min_height = min_height_prop.parse().unwrap();
-        }
-
-        if let Some(max_height_prop) = html_element.get_style_property("max-height") {
-            max_height = max_height_prop.parse().unwrap();
-        }
-
-        if let Some(width_prop) = html_element.get_style_property("width") {
-            min_width = width_prop.parse().unwrap();
-        }
-
-        if let Some(height_prop) = html_element.get_style_property("height") {
-            min_height = height_prop.parse().unwrap();
-        }
-
+        let min_width = get_and_parse_or(html_element, "width", get_and_parse_or(html_element, "min-width", 0.0));
+        let max_width = get_and_parse_or(html_element, "max-width", std::f64::INFINITY);
+        
+        let min_height = get_and_parse_or(html_element, "height", get_and_parse_or(html_element, "min-height", 0.0));
+        let max_height = get_and_parse_or(html_element, "max-height", std::f64::INFINITY);
+        
         element.width = clamp(element.width, min_width, max_width);
         element.height = clamp(element.height, min_height, max_height);
     }
@@ -168,7 +155,7 @@ impl Element {
     }
 }
 
-/// Clamps given value to be within given range.
+/// Clamps given value to given range.
 fn clamp(val: f64, min: f64, max: f64) -> f64 {
     if val < min {
         return min;
