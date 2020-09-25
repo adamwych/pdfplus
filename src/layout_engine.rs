@@ -128,7 +128,7 @@ impl Engine {
         element.height = clamp(element.height, min_height, max_height);
     }
 
-    /// Moves the element accordingly to its `top` or `left` style properties.
+    /// Moves the element according to its `top` and `left` style properties.
     fn adjust_element_position(&self, html_element: &html::Element, element: &mut Element) {
         if let Some(left_prop) = html_element.get_style_property("left") {
             let left: f64 = left_prop.parse().unwrap();
