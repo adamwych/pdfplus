@@ -55,15 +55,21 @@ impl Document {
 
     /// Sets element at `element_index` to be a child of element at `parent_index`.
     pub fn add_element(&mut self, element_index: usize, parent_index: usize) {
+        assert!(element_index != parent_index, "circular reference encountered");
         assert!(element_index < self.elements.len(), "attempted to add an unknown element");
         assert!(parent_index < self.elements.len(), "attempted to add an element to an unknown parent");
+
+        let parent = self.get_element(parent_index);
+        if parent.children.contains(&element_index) {
+            println!("warning: attempted to add an element to its parent multiple times");
+            return;
+        }
+
+        parent.children.push(element_index);
 
         let mut child = self.get_element(element_index);
         child.parent = parent_index;
         child.has_parent = true;
-
-        let parent = self.get_element(parent_index);
-        parent.children.push(element_index);
     }
 
     pub fn add_element_to_root(&mut self, element_index: usize) {
