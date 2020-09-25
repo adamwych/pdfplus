@@ -46,6 +46,7 @@ pub fn get_predefined_colors() -> HashMap<&'static str, Color> {
     map.insert("red", Color::from_hex("ff0000"));
     map.insert("green", Color::from_hex("00ff00"));
     map.insert("blue", Color::from_hex("0000ff"));
+    map.insert("transparent", Color { red: 0, green: 0, blue: 0, alpha: 0 });
 
     return map;
 }
