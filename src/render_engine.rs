@@ -5,6 +5,7 @@ use crate::layout_engine;
 use crate::context;
 use crate::resources_manager::{ResourcesManagerRef, FontResource};
 use crate::font;
+use crate::color;
 use printpdf::*;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -60,17 +61,24 @@ impl Engine {
         let page = self.get_page(0);
         let doc = self.document.borrow();
         let html_element = doc.get_element_immutable(element.element);
+        let resource_manager = self.resource_manager.borrow();
 
         // Draw background.
         if !html_element.is_text_node() {
             self.draw_rect(page, element.x, element.y, element.width, element.height);
         }
 
-        let resource_manager = self.resource_manager.borrow();
-
+        // Draw the text, if this is a text node.
         if html_element.is_text_node() {
             let fallback_font = self.fallback_font.as_ref().unwrap();
             let font_name = self.get_font_name(&html_element);
+
+            let default_color_code = color::get_default_color_code();
+            let text_color_code = doc.get_element_style_property(element.element, "color").unwrap_or(&default_color_code);
+            let text_color = color::code_to_color(text_color_code);
+
+            page.layer.set_fill_color(self.color_to_printpdf_color(&text_color));
+
             if let Some(external_font) = self.fonts.get(&font_name) {
                 let font_resource = &resource_manager.get_font(&font_name).unwrap().font;
                 let text_bb = font_resource.get_text_bounding_box(&html_element.text, 12.0, true);
@@ -106,7 +114,6 @@ impl Engine {
     fn draw_text(&self, page: &DrawTargetPage, x: f64, y: f64, text: &String, font: &IndirectFontRef) {
         let xx = self.px_to_mm(x);
         let yy = self.px_to_mm(y);
-
         page.layer.use_text(text, 12, Mm(xx), Mm(self.flip_y(yy)), font);
     }
 
@@ -126,6 +133,10 @@ impl Engine {
         }
 
         return String::from("Arial");
+    }
+
+    fn color_to_printpdf_color(&self, color: &color::Color) -> printpdf::Color {
+        return printpdf::Color::Rgb(Rgb::new(color.red as f64 / 255.0, color.green as f64 / 255.0, color.blue as f64 / 255.0, None));
     }
 
     pub fn new(context: context::ConversionContext) -> Engine {

@@ -35,6 +35,7 @@ pub struct Element {
 
     /// Index of this element's parent element.
     pub parent: usize,
+    pub has_parent: bool,
 
     /// List of all direct children of this element.
     pub children: Vec<usize>,
@@ -59,6 +60,7 @@ impl Document {
 
         let mut child = self.get_element(element_index);
         child.parent = parent_index;
+        child.has_parent = true;
 
         let parent = self.get_element(parent_index);
         parent.children.push(element_index);
@@ -66,6 +68,27 @@ impl Document {
 
     pub fn add_element_to_root(&mut self, element_index: usize) {
         self.add_element(element_index, self.get_root_index());
+    }
+
+    /// Attempts to find the value of specified style property in given element or one of its ancestors.
+    pub fn get_element_style_property(&self, element_index: usize, property_name: &str) -> Option<&String> {
+        let mut element = Some(self.get_element_immutable(element_index));
+
+        while element.is_some() {
+            let elem = element.unwrap();
+
+            if let Some(prop) = elem.get_style_property(property_name) {
+                return Some(prop);
+            }
+
+            if elem.has_parent {
+                element = Some(self.get_element_immutable(elem.parent));
+            } else {
+                element = None;
+            }
+        }
+
+        return None;
     }
 
     /// Creates a new Element and returns its index.
@@ -194,6 +217,7 @@ impl Element {
             tag: String::default(),
             text: String::default(),
             parent: 0,
+            has_parent: false,
             children: Vec::new(),
             attributes: HashMap::new(),
             style_properties: HashMap::new()
