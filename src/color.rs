@@ -22,9 +22,9 @@ impl Color {
 
         if hex_str.len() == 6 {
             // todo: this can surely be optimized
-            let rr = hex_utils::decode(hex_str.index(Range { start: 0, end: 2 })).ok().unwrap()[0];
-            let gg = hex_utils::decode(hex_str.index(Range { start: 2, end: 4 })).ok().unwrap()[0];
-            let bb = hex_utils::decode(hex_str.index(Range { start: 4, end: 6 })).ok().unwrap()[0];
+            let rr = hex_utils::decode(hex_str[0..2].to_string()).ok().unwrap()[0];
+            let gg = hex_utils::decode(hex_str[2..4].to_string()).ok().unwrap()[0];
+            let bb = hex_utils::decode(hex_str[4..6].to_string()).ok().unwrap()[0];
 
             return Color {
                 red: rr,
