@@ -64,7 +64,12 @@ impl Engine {
         let resource_manager = self.resource_manager.borrow();
 
         // Draw background.
-        if !html_element.is_text_node() {
+        if let Some(background_color_code) = html_element.get_style_property("background-color") {
+            let background_color = color::code_to_color(background_color_code);
+            if background_color.alpha > 0 {
+                page.layer.set_fill_color(self.color_to_printpdf_color(&background_color));
+            }
+
             self.draw_rect(page, element.x, element.y, element.width, element.height);
         }
 
