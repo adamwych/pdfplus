@@ -1,7 +1,7 @@
 [package]
 name = "mpdf"
 version = "0.1.0"
-authors = ["Adam Wychowaniec <adam.wychowaniec@rightinformation.com>"]
+authors = ["Adam Wychowaniec <adamwychowaniecgl@gmail.com>"]
 edition = "2018"
 
 [dependencies]
@@ -10,6 +10,8 @@ pathfinder_geometry = "0.5"
 pathfinder_simd = "0.5"
 png = "0.16.7"
 hex = "0.4.2"
+html5ever = "*"
+markup5ever_rcdom = "0.1.0"
 
 [dependencies.font-kit]
 version = "0.10.0"
