@@ -6,3 +6,10 @@ edition = "2018"
 
 [dependencies]
 printpdf = "0.3.2"
+pathfinder_geometry = "0.5"
+pathfinder_simd = "0.5"
+png = "0.16.7"
+
+[dependencies.font-kit]
+version = "0.10.0"
+features = ["loader-freetype", "loader-freetype-default"]

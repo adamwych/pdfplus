@@ -2,8 +2,12 @@
 
 use std::ops::IndexMut;
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
 
-#[derive(Debug)]
+pub type DocumentRef = Rc<RefCell<Document>>;
+
+#[derive(Debug, Clone)]
 pub struct Document {
 
     /// Index of the root element in the `elements` list.
@@ -17,7 +21,7 @@ pub struct Document {
     
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Element {
 
     /// Index of this element in document's elements list.
@@ -120,7 +124,7 @@ impl Document {
     }
 
     /// Creates a new, empty Document.
-    pub fn new() -> Document {
+    pub fn new() -> Rc<RefCell<Document>> {
         let mut document = Document {
             root: 0,
             elements: Vec::new()
@@ -128,7 +132,7 @@ impl Document {
 
         document.create_element("root");
 
-        return document
+        return Rc::new(RefCell::new(document))
     }
 }
 

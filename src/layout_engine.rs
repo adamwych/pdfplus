@@ -1,11 +1,14 @@
 #![allow(unused)]
 
 use std::ops::IndexMut;
-use crate::html;
 use std::rc::Rc;
+use std::cell::RefCell;
+use crate::html;
+use crate::resources_manager::{ResourcesManagerRef, FontResource};
 
 pub struct Engine {
-    document: html::Document,
+    document: html::DocumentRef,
+    resource_manager: ResourcesManagerRef,
 }
 
 // Contains the result of layout engine's calculations.
@@ -22,7 +25,7 @@ pub type LayoutResult = Vec<Element>;
 
 impl Engine {
     pub fn process_document(&self) -> LayoutResult {
-        let mut result = self.process_element(self.document.get_root_immutable());
+        let mut result = self.process_element(self.document.borrow().get_root_immutable());
         println!("{} elements layed out", result.len());
         return result;
     }
@@ -40,6 +43,16 @@ impl Engine {
     fn process_lonely_element(&self, element: &html::Element) -> Element {
         let mut elem = Element::default(element.index);
 
+        if element.is_text_node() {
+            let line_height = 0.0;
+            let resource_man = self.resource_manager.borrow();
+            if let Some(font) = resource_man.get_font(&self.get_font_name(&element)) {
+                let text_box = font.font.get_text_bounding_box(&element.text, 12.0, true);
+                elem.width = text_box.width;
+                elem.height = text_box.height + line_height;
+            }
+        }
+
         self.clamp_element_size(&element, &mut elem);
         self.adjust_element_position(&element, &mut elem);
         
@@ -53,8 +66,9 @@ impl Engine {
 
         let target_position = result.len();
 
+        let doc = self.document.borrow();
         for element_idx in &element.children {
-            let element = self.document.get_element_immutable(*element_idx);
+            let element = doc.get_element_immutable(*element_idx);
             let mut results = self.process_element(element);
 
             result.append(&mut results);
@@ -136,9 +150,18 @@ impl Engine {
         }
     }
 
-    pub fn new(document: html::Document) -> Engine {
+    fn get_font_name(&self, element: &html::Element) -> String {
+        if let Some(font_prop) = element.get_style_property("font") {
+            return font_prop.clone();
+        }
+
+        return String::from("Arial");
+    }
+
+    pub fn new(document: html::DocumentRef, resource_manager: ResourcesManagerRef) -> Engine {
         Engine {
-            document: document
+            document: document,
+            resource_manager: resource_manager
         }
     }
 }
