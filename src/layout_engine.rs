@@ -109,7 +109,7 @@ impl Engine {
     fn clamp_element_size(&self, html_element: &html::Element, element: &mut Element) {
         fn get_and_parse_or(html_element: &html::Element, name: &str, default: f64) -> f64 {
             if let Some(prop_value) = html_element.get_style_property(name) {
-                return prop_value.parse().unwrap();
+                return prop_value.as_dimension_value().value;
             }
             
             return default;
@@ -131,12 +131,12 @@ impl Engine {
     /// Moves the element according to its `top` and `left` style properties.
     fn adjust_element_position(&self, html_element: &html::Element, element: &mut Element) {
         if let Some(left_prop) = html_element.get_style_property("left") {
-            let left: f64 = left_prop.parse().unwrap();
+            let left: f64 = left_prop.as_dimension_value().value;
             element.x += left;
         }
 
         if let Some(top_prop) = html_element.get_style_property("top") {
-            let top: f64 = top_prop.parse().unwrap();
+            let top: f64 = top_prop.as_dimension_value().value;
             element.y += top;
         }
     }
@@ -152,7 +152,7 @@ impl Engine {
 
     fn get_font_name(&self, element: &html::Element) -> String {
         if let Some(font_prop) = element.get_style_property("font") {
-            return font_prop.clone();
+            return font_prop.as_string().clone();
         }
 
         return String::from("Arial");

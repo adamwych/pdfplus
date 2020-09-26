@@ -64,8 +64,8 @@ impl Engine {
         let resource_manager = self.resource_manager.borrow();
 
         // Draw background.
-        if let Some(background_color_code) = html_element.get_style_property("background-color") {
-            let background_color = color::code_to_color(background_color_code);
+        if let Some(background_color) = html_element.get_style_property("background-color") {
+            let background_color = background_color.as_color();
             if background_color.alpha > 0 {
                 page.layer.set_fill_color(self.color_to_printpdf_color(&background_color));
             }
@@ -77,19 +77,24 @@ impl Engine {
         if html_element.is_text_node() {
             let fallback_font = self.fallback_font.as_ref().unwrap();
             let font_name = self.get_font_name(&html_element);
+            let mut should_render = true;
 
-            let default_color_code = color::get_default_color_code();
-            let text_color_code = doc.get_element_style_property(element.element, "color").unwrap_or(&default_color_code);
-            let text_color = color::code_to_color(text_color_code);
+            if let Some(color) = doc.get_element_style_property(element.element, "color") {
+                if color.as_color().alpha <= 0 {
+                    should_render = false;
+                }
 
-            page.layer.set_fill_color(self.color_to_printpdf_color(&text_color));
+                page.layer.set_fill_color(self.color_to_printpdf_color(&color.as_color()));
+            }
 
-            if let Some(external_font) = self.fonts.get(&font_name) {
-                let font_resource = &resource_manager.get_font(&font_name).unwrap().font;
-                let text_bb = font_resource.get_text_bounding_box(&html_element.text, 12.0, true);
-                self.draw_text(page, element.x, element.y + text_bb.height - text_bb.y, &html_element.text, &external_font);
-            } else {
-                self.draw_text(page, element.x, element.y, &html_element.text, &fallback_font);
+            if should_render {
+                if let Some(external_font) = self.fonts.get(&font_name) {
+                    let font_resource = &resource_manager.get_font(&font_name).unwrap().font;
+                    let text_bb = font_resource.get_text_bounding_box(&html_element.text, 12.0, true);
+                    self.draw_text(page, element.x, element.y + text_bb.height - text_bb.y, &html_element.text, &external_font);
+                } else {
+                    self.draw_text(page, element.x, element.y, &html_element.text, &fallback_font);
+                }
             }
         }
     }
@@ -134,7 +139,7 @@ impl Engine {
 
     fn get_font_name(&self, element: &html::Element) -> String {
         if let Some(font_prop) = element.get_style_property("font") {
-            return font_prop.clone();
+            return font_prop.as_string().clone();
         }
 
         return String::from("Arial");

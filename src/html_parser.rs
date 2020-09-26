@@ -1,5 +1,5 @@
 use crate::html;
-use crate::css_parser;
+use crate::css::{parse_inline as parse_inline_css};
 use html5ever::driver::ParseOpts;
 use html5ever::tendril::TendrilSink;
 use html5ever::tree_builder::TreeBuilderOpts;
@@ -30,7 +30,10 @@ fn walk(handle: &rcdom::Handle, target: &mut html::DocumentRef) -> Option<usize>
                 let attr_value = &attribute.value.to_string();
 
                 if attr_name == "style" {
-                    // todo
+                    let declarations = parse_inline_css(attr_value);
+                    for declaration in declarations {
+                        element.add_style_property(declaration.name.as_str(), declaration.value);
+                    }
                 } else {
                     element.add_attribute(attr_name, attr_value);
                 }

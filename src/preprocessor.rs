@@ -48,7 +48,7 @@ impl Preprocessor {
 
     fn get_font_name(&self, element: &html::Element) -> String {
         if let Some(font_prop) = element.get_style_property("font") {
-            return font_prop.clone();
+            return font_prop.as_string().clone();
         }
 
         return String::from("Arial");

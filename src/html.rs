@@ -4,6 +4,7 @@ use std::ops::IndexMut;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
+use crate::css::PrimitiveValue;
 
 pub type DocumentRef = Rc<RefCell<Document>>;
 
@@ -47,7 +48,7 @@ pub struct Element {
     /// This list contains only those properties, which are actually active
     /// meaning that if someone overwrites a property from a CSS file using
     /// element's inline `style` attribute, then the latter will be put here.
-    style_properties: HashMap<String, String>,
+    style_properties: HashMap<String, PrimitiveValue>,
 
 }
 
@@ -77,7 +78,7 @@ impl Document {
     }
 
     /// Attempts to find the value of specified style property in given element or one of its ancestors.
-    pub fn get_element_style_property(&self, element_index: usize, property_name: &str) -> Option<&String> {
+    pub fn get_element_style_property(&self, element_index: usize, property_name: &str) -> Option<&PrimitiveValue> {
         let mut element = Some(self.get_element_immutable(element_index));
 
         while element.is_some() {
@@ -194,15 +195,12 @@ impl Element {
         return self.attributes.contains_key(name);
     }
 
-    /// todo: this is here just for easy testing, it should be removed
-    /// and replaced by parsing the `style` attribute and getting those
-    /// properties from there.
-    pub fn add_style_property(&mut self, name: &str, value: &str) {
-        self.style_properties.insert(String::from(name), String::from(value));
+    pub fn add_style_property(&mut self, name: &str, value: PrimitiveValue) {
+        self.style_properties.insert(String::from(name), value);
     }
 
     /// Returns value of specified style property, if added to the node.
-    pub fn get_style_property(&self, name: &str) -> Option<&String> {
+    pub fn get_style_property(&self, name: &str) -> Option<&PrimitiveValue> {
         return self.style_properties.get(name);
     }
 

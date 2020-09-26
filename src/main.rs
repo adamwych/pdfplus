@@ -11,7 +11,7 @@ mod font;
 mod utils;
 mod png_render_engine;
 mod color;
-mod css_parser;
+mod css;
 
 fn main() {
     cli::run_cli();

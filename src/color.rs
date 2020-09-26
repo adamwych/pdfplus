@@ -51,10 +51,6 @@ pub fn get_predefined_colors() -> HashMap<&'static str, Color> {
     return map;
 }
 
-pub fn get_default_color_code() -> String {
-    String::from("black")
-}
-
 /// Attempts to transform provided string into a color.
 /// Currently only supports transforming RGB hex color codes (#ff0000) and returning predefined colors.
 /// If given string could not be transformed, black will be returned.

@@ -1,10 +1,7 @@
-#![allow(unused)]
-
 use std::env;
 use std::fs::File;
 use std::io::BufWriter;
 use std::rc::Rc;
-use std::cell::RefCell;
 use crate::html;
 use crate::generator;
 use crate::layout_engine;
@@ -47,8 +44,7 @@ pub fn run_cli() {
     let _input_file_path = &args[1];
     let output_file_path = &args[2];
 
-    let mut doc = html_parser::parse_text("<div style=\"background-color: red;\">Hello world from actual HTML!</div>");
-    // println!("{:#?}", doc);
+    let doc = html_parser::parse_text("<div style=\"background-color: red; color: blue;\">Hello world from actual HTML!</div>");
     generate_pdf_from_document(doc, output_file_path);
 }
 
