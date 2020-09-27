@@ -34,34 +34,56 @@ impl Parser {
         let property_name = self.buffer.current().value.clone();
         let mut declaration = PropertyDeclaration::new(property_name.clone());
         self.buffer.expect(TokenKind::Colon);
+        let mut value: Option<PrimitiveValue> = None;
 
         match property_name.as_str() {
+            "display" => {
+                value = self.parse_display_value();
+            }
+
             "color" | "background-color" => {
-                declaration.value = self.parse_color_value();
-                return Some(declaration);
+                value = self.parse_color_value();
             }
 
             _ => {
                 println!("unsupported property declaration: {}", property_name);
                 self.buffer.skip_until(TokenKind::Semicolon);
                 self.buffer.expect(TokenKind::Semicolon);
+            }
+        }
+
+        if value.is_none() {
+            println!("invalid '{}' property value - cannot be {}", property_name, self.buffer.current().kind.to_string());
+            return None;
+        }
+
+        declaration.value = value.unwrap();
+        return Some(declaration);
+    }
+
+    fn parse_display_value(&mut self) -> Option<PrimitiveValue> {
+        let token = self.buffer.next();
+        match token.kind {
+            TokenKind::Identifier => {
+                return Some(PrimitiveValue::from_identifier(&token.value));
+            }
+
+            _ => {
                 return None;
             }
         }
     }
 
-    fn parse_color_value(&mut self) -> PrimitiveValue {
+    fn parse_color_value(&mut self) -> Option<PrimitiveValue> {
         let token = self.buffer.next();
-        let value = &token.value;
-
         match token.kind {
             TokenKind::Hash |
             TokenKind::Identifier => {
-                return PrimitiveValue::from_color(&value, color::code_to_color(&value));
+                return Some(PrimitiveValue::from_color(&token.value, color::code_to_color(&token.value)));
             }
 
             _ => {
-                return PrimitiveValue::default();
+                return None;
             }
         }
     }
