@@ -8,39 +8,63 @@ use crate::resources_manager::{ResourcesManagerRef, FontResource};
 
 pub struct Engine {
     document: html::DocumentRef,
-    resource_manager: ResourcesManagerRef,
+    resource_manager: ResourcesManagerRef
 }
 
-// Contains the result of layout engine's calculations.
-#[derive(Debug)]
+/// Represents the result of layout calculations for a single HTML element.
+#[derive(Debug, Clone)]
 pub struct Element {
+
+    /// Index of the corresponding HTML element.
     pub element: usize,
+
+    /// Final width of the element, taking into account its children and display properties.
     pub width: f64,
+
+    /// Final height of the element, taking into account its children and display properties.
     pub height: f64,
+
+    /// Position on the X axis, accounting for the position of the parent.
     pub x: f64,
-    pub y: f64
+
+    /// Position on the Y axis, accounting for the position of the parent.
+    pub y: f64,
+    
+    /// Position on the X axis, not accounting for the position of the parent.
+    pub local_x: f64,
+
+    /// Position on the Y axis, not accounting for the position of the parent.
+    pub local_y: f64,
+
+    /// List of this element's direct children handles.
+    pub children: Vec<Element>,
 }
 
-pub type LayoutResult = Vec<Element>;
+#[derive(Debug, Clone)]
+pub struct ElementHandle {
+    index: usize
+}
 
 impl Engine {
-    pub fn process_document(&self) -> LayoutResult {
-        let mut result = self.process_element(self.document.borrow().get_root_immutable());
-        println!("{} elements layed out", result.len());
-        return result;
+    pub fn process_document(&self) -> Element {
+        let doc = self.document.borrow();
+        let root = doc.get_root_immutable();
+        let mut root_element = self.process_element(root, None);
+        root_element.children = self.adjust_children_position(&root_element, root_element.children.clone());
+        return root_element;
     }
 
     /// Calculates layout properties of a generic element.
-    fn process_element(&self, element: &html::Element) -> LayoutResult {
+    fn process_element(&self, element: &html::Element, parent: Option<&Element>) -> Element {
         if element.children.len() == 0 {
-            return vec![self.process_lonely_element(element)];
+            return self.process_lonely_element(element, parent);
         }
 
-        return self.process_crowded_element(element);
+        return self.process_crowded_element(element, parent);
     }
 
     /// Calculates layout properties of an element with no children.
-    fn process_lonely_element(&self, element: &html::Element) -> Element {
+    fn process_lonely_element(&self, element: &html::Element, parent: Option<&Element>) -> Element {
         let mut elem = Element::default(element.index);
 
         if element.is_text_node() {
@@ -55,52 +79,61 @@ impl Engine {
 
         self.clamp_element_size(&element, &mut elem);
         self.adjust_element_position(&element, &mut elem);
-        
+
         return elem;
     }
 
     /// Calculates layout properties of an element that has some children.
-    fn process_crowded_element(&self, element: &html::Element) -> LayoutResult {
-        let mut result = LayoutResult::new();
-        let mut elem = Element::default(element.index);
-
-        let target_position = result.len();
-
+    fn process_crowded_element(&self, element: &html::Element, parent: Option<&Element>) -> Element {
         let doc = self.document.borrow();
+        let mut elem = Element::default(element.index);
+        let mut children = Vec::<Element>::new();
+
         for element_idx in &element.children {
             let element = doc.get_element_immutable(*element_idx);
-            let mut results = self.process_element(element);
-
-            result.append(&mut results);
+            let mut child = self.process_element(element, Some(&elem));
+            children.push(child);
         }
 
+        let mut children_clone = children.clone();
+        let children_num = children_clone.len();
+
         // Calculate positions of element's children.
-        for idx in 1..element.children.len() {
-            let previous_element = &result[idx - 1];
-            let y = previous_element.y + previous_element.height;
-            result[idx].y += y;
+        // todo: Change this to avoid cloning children on every loop!!
+        for idx in 1..children_num {
+            let mut child = children.index_mut(idx);
+            let previous_child = &children_clone[idx - 1];
+
+            let y = previous_child.local_y + previous_child.height;
+            child.local_y += y;
+            children_clone = children.clone();
         }
 
         // Calculate width and height of the element itself.
         let mut width: f64 = 0.0;
         let mut height: f64 = 0.0;
 
-        for idx in 0..element.children.len() {
-            let child = &result[idx];
-            width = width.max(child.x + child.width);
-            height = height.max(child.y + child.height);
+        for child in &children {
+            width = width.max(child.local_x + child.width);
+            height = height.max(child.local_y + child.height);
         }
 
         elem.width = width;
         elem.height = height;
+        elem.children = children;
 
         self.clamp_element_size(&element, &mut elem);
         self.adjust_element_position(&element, &mut elem);
-        self.adjust_children_position(&elem, &mut result);
 
-        result.insert(target_position, elem);
+        if let Some(parent_element) = parent {
+            elem.x += parent_element.x;
+            elem.y += parent_element.y;
+        } else {
+            elem.x = elem.local_x;
+            elem.y = elem.local_y;
+        }
 
-        return result;
+        return elem;
     }
 
     /// Clamps given layout element's width and height to be within the range
@@ -132,22 +165,27 @@ impl Engine {
     fn adjust_element_position(&self, html_element: &html::Element, element: &mut Element) {
         if let Some(left_prop) = html_element.get_style_property("left") {
             let left: f64 = left_prop.as_dimension_value().value;
-            element.x += left;
+            element.local_x += left;
         }
 
         if let Some(top_prop) = html_element.get_style_property("top") {
             let top: f64 = top_prop.as_dimension_value().value;
-            element.y += top;
+            element.local_y += top;
         }
     }
 
-    /// Adjusts element's children position to account for their parent's position.
-    fn adjust_children_position(&self, parent: &Element, children: &mut LayoutResult) {
+    /// Calculates final position of given elements. Uses `parent` as the origin.
+    /// Calls this method for all elements in the tree recursively.
+    fn adjust_children_position(&self, parent: &Element, children: Vec<Element>) -> Vec<Element> {
+        let mut result = children.clone();
+
         for idx in 0..children.len() {
-            let mut child = children.index_mut(idx);
-            child.x += parent.x;
-            child.y += parent.y;
+            result[idx].x = parent.x + result[idx].local_x;
+            result[idx].y = parent.y + result[idx].local_y;
+            result[idx].children = self.adjust_children_position(&result[idx], result[idx].children.clone());
         }
+
+        return result;
     }
 
     fn get_font_name(&self, element: &html::Element) -> String {
@@ -173,7 +211,10 @@ impl Element {
             width: 0.0,
             height: 0.0,
             x: 0.0,
-            y: 0.0
+            y: 0.0,
+            local_x: 0.0,
+            local_y: 0.0,
+            children: Vec::new()
         }
     }
 }

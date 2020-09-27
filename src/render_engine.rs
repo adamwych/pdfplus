@@ -14,7 +14,7 @@ use std::collections::HashMap;
 pub struct Engine {
     document: html::DocumentRef,
     resource_manager: ResourcesManagerRef,
-    elements: layout_engine::LayoutResult,
+    root_element: layout_engine::Element,
     pages: Vec<DrawTargetPage>,
     fonts: HashMap<String, IndirectFontRef>,
     fallback_font: Option<IndirectFontRef>
@@ -52,9 +52,7 @@ impl Engine {
 
         let page = self.add_page(pdf);
 
-        for element in &self.elements {
-            self.draw_element(&element, pdf);
-        }
+        self.draw_element(&self.root_element, pdf);
     }
 
     fn draw_element(&self, element: &layout_engine::Element, pdf: &PdfDocumentReference) {
@@ -96,6 +94,10 @@ impl Engine {
                     self.draw_text(page, element.x, element.y, &html_element.text, &fallback_font);
                 }
             }
+        }
+
+        for child in &element.children {
+            self.draw_element(&child, pdf);
         }
     }
 
@@ -152,7 +154,7 @@ impl Engine {
     pub fn new(context: context::ConversionContext) -> Engine {
         Engine {
             document: context.document,
-            elements: context.layout_result.unwrap(),
+            root_element: context.root_element.unwrap(),
             resource_manager: context.resources_manager.unwrap(),
             pages: Vec::new(),
             fonts: HashMap::default(),

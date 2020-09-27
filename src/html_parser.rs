@@ -16,8 +16,11 @@ fn walk(handle: &rcdom::Handle, target: &mut html::DocumentRef) -> Option<usize>
         }
 
         rcdom::NodeData::Text { ref contents } => {
-            let text_elem_idx = target.borrow_mut().create_text_element(&contents.borrow());
-            result = Some(text_elem_idx);
+            let text_elem_content = &contents.borrow().trim().to_string();
+            if !text_elem_content.is_empty() {
+                let text_elem_idx = target.borrow_mut().create_text_element(text_elem_content);
+                result = Some(text_elem_idx);
+            }
         }
 
         rcdom::NodeData::Element { ref name, ref attrs, .. } => {
@@ -63,6 +66,7 @@ pub fn parse_text(text: &str) -> Box<html::DocumentRef> {
     let opts = ParseOpts {
         tree_builder: TreeBuilderOpts {
             drop_doctype: true,
+            scripting_enabled: false,
             ..Default::default()
         },
         ..Default::default()

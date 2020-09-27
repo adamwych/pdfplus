@@ -8,8 +8,8 @@ pub struct ConversionContext {
     /// The HTML document that is being converted.
     pub document: html::DocumentRef,
 
-    /// Results of layout engine's calculations.
-    pub layout_result: Option<layout_engine::LayoutResult>,
+    /// Output from the layout engine.
+    pub root_element: Option<layout_engine::Element>,
 
     /// External resources manager.
     pub resources_manager: Option<ResourcesManagerRef>,
