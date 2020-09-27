@@ -82,6 +82,8 @@ impl Engine {
                 }
 
                 page.layer.set_fill_color(self.color_to_printpdf_color(&color.as_color()));
+            } else {
+                page.layer.set_fill_color(self.color_to_printpdf_color(&color::Color::from_rgb(0, 0, 0)));
             }
 
             if should_render {

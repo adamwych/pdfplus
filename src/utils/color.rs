@@ -11,6 +11,15 @@ pub struct Color {
 }
 
 impl Color {
+    pub fn from_rgb(red: u8, green: u8, blue: u8) -> Color {
+        Color {
+            red: red,
+            green: green,
+            blue: blue,
+            alpha: 255
+        }
+    }
+
     pub fn from_hex(hex: &str) -> Color {
         let mut hex_str = String::from(hex);
 
