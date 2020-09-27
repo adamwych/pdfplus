@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use crate::color::Color;
+use crate::utils::Color;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum PrimitiveValueKind {

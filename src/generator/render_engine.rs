@@ -1,11 +1,10 @@
 #![allow(unused)]
 
 use crate::html;
-use crate::layout_engine;
-use crate::context;
-use crate::resources_manager::{ResourcesManagerRef, FontResource};
-use crate::font;
-use crate::color;
+use crate::layout;
+use crate::generator::context;
+use crate::generator::resources_manager::{ResourcesManagerRef, FontResource};
+use crate::utils::{font, color};
 use printpdf::*;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -14,7 +13,7 @@ use std::collections::HashMap;
 pub struct Engine {
     document: html::DocumentRef,
     resource_manager: ResourcesManagerRef,
-    root_element: layout_engine::Element,
+    root_element: layout::Element,
     pages: Vec<DrawTargetPage>,
     fonts: HashMap<String, IndirectFontRef>,
     fallback_font: Option<IndirectFontRef>
@@ -55,7 +54,7 @@ impl Engine {
         self.draw_element(&self.root_element, pdf);
     }
 
-    fn draw_element(&self, element: &layout_engine::Element, pdf: &PdfDocumentReference) {
+    fn draw_element(&self, element: &layout::Element, pdf: &PdfDocumentReference) {
         let page = self.get_page(0);
         let doc = self.document.borrow();
         let html_element = doc.get_element_immutable(element.element);

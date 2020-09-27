@@ -4,7 +4,7 @@ use std::ops::IndexMut;
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::html;
-use crate::resources_manager::{ResourcesManagerRef, FontResource};
+use crate::generator::resources_manager::{ResourcesManagerRef, FontResource};
 
 pub struct Engine {
     document: html::DocumentRef,
@@ -38,11 +38,6 @@ pub struct Element {
 
     /// List of this element's direct children handles.
     pub children: Vec<Element>,
-}
-
-#[derive(Debug, Clone)]
-pub struct ElementHandle {
-    index: usize
 }
 
 impl Engine {

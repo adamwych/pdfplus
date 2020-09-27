@@ -1,4 +1,4 @@
-use crate::color;
+use crate::utils;
 use crate::css::PropertyDeclaration;
 use crate::css::PrimitiveValue;
 use crate::css::ParserTokenBuffer;
@@ -79,7 +79,7 @@ impl Parser {
         match token.kind {
             TokenKind::Hash |
             TokenKind::Identifier => {
-                return Some(PrimitiveValue::from_color(&token.value, color::code_to_color(&token.value)));
+                return Some(PrimitiveValue::from_color(&token.value, utils::color::code_to_color(&token.value)));
             }
 
             _ => {

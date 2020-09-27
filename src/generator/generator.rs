@@ -1,9 +1,8 @@
 #![allow(unused)]
 
 use crate::html;
-use crate::layout_engine;
-use crate::render_engine;
-use crate::context;
+use crate::generator::context;
+use crate::generator::render_engine;
 use printpdf::*;
 
 pub fn generate_pdf(context: context::ConversionContext) -> PdfDocumentReference {

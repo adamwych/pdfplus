@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
-use crate::font;
+use crate::utils::font;
 
 pub type ResourcesManagerRef = Rc<RefCell<ResourcesManager>>;
 

@@ -2,8 +2,8 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use font_kit;
 use crate::html;
-use crate::resources_manager::{ResourcesManager, ResourcesManagerRef, FontResource};
-use crate::font;
+use crate::generator::resources_manager::{ResourcesManager, ResourcesManagerRef, FontResource};
+use crate::utils::font;
 
 /// Preprocessor's responsibility is to go through each node in an HTML document
 /// and load all external resources like fonts, images etc. so they can be immediately used

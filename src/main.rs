@@ -1,16 +1,9 @@
-mod cli;
-mod html;
-mod html_parser;
-mod generator;
-mod layout_engine;
-mod render_engine;
-mod preprocessor;
-mod context;
-mod resources_manager;
-mod font;
-mod utils;
-mod color;
 mod css;
+mod cli;
+mod generator;
+mod html;
+mod layout;
+mod utils;
 
 fn main() {
     cli::run_cli();
