@@ -51,7 +51,7 @@ impl ElementStyleProperties {
         let mut result = ElementStyleProperties::new();
 
         for (name, value) in parent.get_entries() {
-            if is_cascadable_property(&name) {
+            if can_be_inherited(&name) {
                 result.set(&name, value);
             }
         }
@@ -61,7 +61,7 @@ impl ElementStyleProperties {
         }
 
         for (name, value) in parent.get_default_entries() {
-            if is_cascadable_property(&name) {
+            if can_be_inherited(&name) {
                 if !result.has(&name) {
                     result.set(&name, value);
                 }
@@ -87,7 +87,7 @@ impl ElementStyleProperties {
 
 lazy_static! {
     // https://drafts.csswg.org/css2/#property-index
-    static ref CASCADABLE_PROPERTIES: Vec<&'static str> = vec![
+    static ref INHERITED_PROPERTIES: Vec<&'static str> = vec![
         "border-collapse",
         "border-spacing",
         "caption-side",
@@ -119,6 +119,6 @@ lazy_static! {
     ];
 }
 
-fn is_cascadable_property(name: &str) -> bool {
-    return CASCADABLE_PROPERTIES.contains(&name);
+fn can_be_inherited(name: &str) -> bool {
+    return INHERITED_PROPERTIES.contains(&name);
 }
