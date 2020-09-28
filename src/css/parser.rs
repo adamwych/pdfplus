@@ -74,7 +74,11 @@ impl Parser {
         let token = self.buffer.next();
         match token.kind {
             TokenKind::Dimension => {
-                return Some(PrimitiveValue::from_dimension_value(&token.value, token.value.to_string().parse().unwrap(), &token.unit));
+                if let Ok(value) = token.value.to_string().parse() {
+                    return Some(PrimitiveValue::from_dimension_value(&token.value, value, &token.unit));
+                }
+
+                return None;
             }
 
             _ => {
