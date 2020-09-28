@@ -76,7 +76,7 @@ impl Engine {
             let font_name = self.get_font_name(&html_element);
             let mut should_render = true;
 
-            if let Some(color) = doc.get_element_style_property(element.element, "color") {
+            if let Some(color) = html_element.get_style_property("color") {
                 if color.as_color().alpha <= 0 {
                     should_render = false;
                 }

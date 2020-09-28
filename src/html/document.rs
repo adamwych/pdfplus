@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 
 use std::ops::IndexMut;
-use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::css::PrimitiveValue;
+use crate::html::{Element, ElementStyleProperties};
 
 pub type DocumentRef = Rc<RefCell<Document>>;
 
@@ -20,36 +20,6 @@ pub struct Document {
     /// by this document.
     elements: Vec<Element>,
     
-}
-
-#[derive(Debug, Clone)]
-pub struct Element {
-
-    /// Index of this element in document's elements list.
-    pub index: usize,
-
-    /// Tag name.
-    pub tag: String,
-
-    // Special case for text nodes. Contains the text.
-    pub text: String,
-
-    /// Index of this element's parent element.
-    pub parent: usize,
-    pub has_parent: bool,
-
-    /// List of all direct children of this element.
-    pub children: Vec<usize>,
-
-    /// Contains all attributes of this element.
-    attributes: HashMap<String, String>,
-
-    /// Contains all style properties.
-    /// This list contains only those properties, which are actually active
-    /// meaning that if someone overwrites a property from a CSS file using
-    /// element's inline `style` attribute, then the latter will be put here.
-    style_properties: HashMap<String, PrimitiveValue>,
-
 }
 
 impl Document {
@@ -77,6 +47,25 @@ impl Document {
         self.add_element(element_index, self.get_root_index());
     }
 
+    /// Applies element's styling properties to all its descendants.
+    /// Not all properties will be applied - only those, which are
+    /// supposed to be shared between parents and their children (e.g. text color).
+    pub fn cascade_element_styles(&mut self, element_index: usize) {
+        let mut doc = self.clone();
+        let element = self.elements.index_mut(element_index);
+        let parent_props = element.get_style_properties();
+        let children_num = element.children.len();
+
+        for child_index_i in 0..children_num {
+            let child_index = element.children[child_index_i];
+            let child = doc.get_element(child_index);
+            child.set_style_properties(ElementStyleProperties::merge(child.get_style_properties(), parent_props));
+            doc.cascade_element_styles(child_index);
+        }
+
+        self.elements = doc.elements;
+    }
+
     /// Attempts to find the value of specified style property in given element or one of its ancestors.
     pub fn get_element_style_property(&self, element_index: usize, property_name: &str) -> Option<&PrimitiveValue> {
         let mut element = Some(self.get_element_immutable(element_index));
@@ -101,11 +90,10 @@ impl Document {
     /// Creates a new Element and returns its index.
     pub fn create_element(&mut self, tag: &str) -> usize {
         let idx = self.elements.len();
-        let element = Element {
-            index: idx,
-            tag: String::from(tag),
-            ..Element::default()
-        };
+        let mut element = Element::default();
+        element.index = idx;
+        element.tag = String::from(tag);
+        element.add_default_style_properties();
 
         self.elements.push(element);
         return idx;
@@ -114,12 +102,11 @@ impl Document {
     /// Creates a new text Element and returns its index.
     pub fn create_text_element(&mut self, text: &str) -> usize {
         let idx = self.elements.len();
-        let element = Element {
-            index: idx,
-            tag: String::from("#text"),
-            text: String::from(text),
-            ..Element::default()
-        };
+        let mut element = Element::default();
+        element.index = idx;
+        element.tag = String::from("#text");
+        element.text = String::from(text);
+        element.add_default_style_properties();
 
         self.elements.push(element);
         return idx;
@@ -163,68 +150,5 @@ impl Document {
         document.create_element("root");
 
         return Rc::new(RefCell::new(document))
-    }
-}
-
-impl Element {
-
-    /// Adds specified attribute to the node.
-    /// An attribute's name must not contains spaces.
-    pub fn add_attribute(&mut self, name: &str, value: &str) {
-        if name.contains(" ") {
-            println!("error: attribute's name must not contain spaces (found \"{}\")", name);
-            return;
-        }
-
-        self.attributes.insert(String::from(name), String::from(value));
-    }
-
-    /// Returns value of specified attribute, if added to the node.
-    pub fn get_attribute(&self, name: &str) -> Option<&String> {
-        return self.attributes.get(name);
-    }
-
-    /// Removes specified attribute from the node.
-    pub fn remove_attribute(&mut self, name: &str) {
-        self.attributes.remove(name);
-    }
-
-    /// Returns whether an attribute with specified name was added
-    /// to the node.
-    pub fn has_attribute(&self, name: &str) -> bool {
-        return self.attributes.contains_key(name);
-    }
-
-    pub fn add_style_property(&mut self, name: &str, value: PrimitiveValue) {
-        self.style_properties.insert(String::from(name), value);
-    }
-
-    /// Returns value of specified style property, if added to the node.
-    pub fn get_style_property(&self, name: &str) -> Option<&PrimitiveValue> {
-        return self.style_properties.get(name);
-    }
-
-    /// Returns whether a style property with specified name was
-    /// added to the node.
-    pub fn has_style_property(&self, name: &str) -> bool {
-        return self.style_properties.contains_key(name);
-    }
-
-    /// Returns whether this is a text node.
-    pub fn is_text_node(&self) -> bool {
-        return self.tag == "#text";
-    }
-
-    pub fn default() -> Element {
-        Element {
-            index: 0,
-            tag: String::default(),
-            text: String::default(),
-            parent: 0,
-            has_parent: false,
-            children: Vec::new(),
-            attributes: HashMap::new(),
-            style_properties: HashMap::new()
-        }
     }
 }

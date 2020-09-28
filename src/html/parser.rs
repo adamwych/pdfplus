@@ -79,5 +79,7 @@ pub fn parse_text(text: &str) -> Box<html::DocumentRef> {
 
     walk(&dom.document, &mut document);
 
+    document.borrow_mut().cascade_element_styles(0);
+
     return document;
 }

@@ -12,6 +12,7 @@ png = "0.16.7"
 hex = "0.4.2"
 html5ever = "*"
 markup5ever_rcdom = "0.1.0"
+lazy_static = "1.4.0"
 
 [dependencies.font-kit]
 version = "0.10.0"
