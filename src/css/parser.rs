@@ -35,8 +35,13 @@ impl Parser {
         let mut declaration = PropertyDeclaration::new(property_name.clone());
         self.buffer.expect(TokenKind::Colon);
         let mut value: Option<PrimitiveValue> = None;
+        let mut supported = true;
 
         match property_name.as_str() {
+            "width" | "height" => {
+                value = self.parse_generic_dimension_value();
+            }
+
             "display" => {
                 value = self.parse_display_value();
             }
@@ -46,19 +51,36 @@ impl Parser {
             }
 
             _ => {
+                supported = false;
                 println!("unsupported property declaration: {}", property_name);
                 self.buffer.skip_until(TokenKind::Semicolon);
                 self.buffer.expect(TokenKind::Semicolon);
             }
         }
 
-        if value.is_none() {
-            println!("invalid '{}' property value - cannot be {}", property_name, self.buffer.current().kind.to_string());
-            return None;
+        if supported {
+            if value.is_none() {
+                println!("invalid '{}' property value - cannot be {}", property_name, self.buffer.current().kind.to_string());
+                return None;
+            }
+    
+            declaration.value = value.unwrap();
         }
 
-        declaration.value = value.unwrap();
         return Some(declaration);
+    }
+
+    fn parse_generic_dimension_value(&mut self) -> Option<PrimitiveValue> {
+        let token = self.buffer.next();
+        match token.kind {
+            TokenKind::Dimension => {
+                return Some(PrimitiveValue::from_dimension_value(&token.value, token.value.to_string().parse().unwrap(), &token.unit));
+            }
+
+            _ => {
+                return None;
+            }
+        }
     }
 
     fn parse_display_value(&mut self) -> Option<PrimitiveValue> {
